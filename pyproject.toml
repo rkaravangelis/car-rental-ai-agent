@@ -1,0 +1,36 @@
+[project]
+name = "car-rental-agent"
+version = "0.1.0"
+description = "MVP: policy-grounded customer service agent with refunds via MCP"
+requires-python = ">=3.12"
+
+[dependency-groups]
+# Install: pip install --group app   (pip >= 25.1)
+app = [
+    "langgraph==1.2.20",              # agent as a state graph
+    "langchain-ollama==1.1.0",        # LLM: gpt-oss:120b-cloud via Ollama
+    "langchain-mcp-adapters==0.3.2",  # MCP tools -> LangGraph tools
+    "mcp==1.30.0",                    # MCP server (refund tool); 2.x not yet supported by adapters
+    "sentence-transformers==6.2.0",   # embedding model all-MiniLM-L6-v2
+    "langchain-text-splitters==1.1.3", # chunking
+    "psycopg[binary]==3.3.8",         # Postgres driver (ledger + vectors)
+    "pypdf==6.21.4",                  # read the policy PDFs
+    "pydantic==2.14.3",               # response schema = guardrails
+    "fastapi==0.162.0",               # API
+    "uvicorn==0.54.0",                # API server
+    "streamlit==1.67.0",              # frontend
+    "httpx==0.28.1",                  # frontend -> API calls
+    "python-dotenv==1.2.4",           # load .env locally
+]
+# Install: pip install --group dev
+dev = [
+    "pytest==9.2.0",
+    "ruff==0.17.4",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["02_mcp_server", "03_rag", "04_agent", "05_api"]
+testpaths = ["04_agent"]
+
+[tool.ruff]
+line-length = 100

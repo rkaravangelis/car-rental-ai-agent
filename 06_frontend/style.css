@@ -1,0 +1,93 @@
+/* Look and feel. Colors from the business requirements visual, type from road signage (Barlow). */
+@import url("https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@600&display=swap");
+
+:root {
+  --accent: #1F4E79;
+  --black: #191919;
+  --grey: #6B6B6B;
+  --road: #E2E2E2;
+  --pass: #1F8A5B;
+  --block: #C62828;
+}
+
+/* --- Base ------------------------------------------------------------------------------- */
+html, body, [data-testid="stApp"] :is(p, li, textarea, h3) {   /* icons are spans: untouched */
+  font-family: "Barlow", system-ui, sans-serif;
+}
+header[data-testid="stHeader"] { background: transparent; }
+[data-testid="stMainBlockContainer"] { max-width: 820px; padding-top: 3rem; }
+[data-testid="stBottomBlockContainer"] { max-width: 820px; }   /* chat input lines up with the chat */
+
+/* --- Header ----------------------------------------------------------------------------- */
+.title {
+  font-family: "Barlow Semi Condensed", sans-serif;
+  font-size: 2.6rem; font-weight: 600; line-height: 1.05; color: var(--black);
+}
+.title::after {                       /* short accent stripe, like the roof of the visual */
+  content: ""; display: block; width: 56px; height: 5px; margin-top: 14px; background: var(--accent);
+}
+.subtitle { color: var(--grey); font-size: 1.05rem; margin: 12px 0 28px; max-width: 60ch; }
+.empty { color: var(--grey); padding: 8px 0 0; max-width: 60ch; }
+
+/* --- Route: the agent's path under every answer ----------------------------------------- */
+.route { display: flex; max-width: 600px; margin: 18px 0 10px; }
+.stop { flex: 1; position: relative; padding-top: 22px; }
+.stop::before {                       /* the road to the next stop */
+  content: ""; position: absolute; top: 5px; left: 6px; right: -6px; height: 2px;
+  background: var(--accent); transform-origin: left;
+}
+.stop:last-child::before { display: none; }
+.stop::after {                        /* the stop itself */
+  content: ""; position: absolute; top: 0; left: 0; width: 12px; height: 12px;
+  border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px #FAFAFA;
+}
+.stop.pass::after { background: var(--pass); }
+.stop.block::after { background: var(--block); }
+.stop.idle::after { background: #FAFAFA; border: 2px solid var(--road); box-sizing: border-box; }
+.stop.block::before, .stop.idle::before { background: var(--road); }
+.stop .k { color: var(--grey); font-size: 0.8rem; }
+.stop .v { color: var(--black); font-weight: 600; font-size: 0.98rem; }
+.stop.block .v { color: var(--block); }
+
+/* One orchestrated moment: only the newest route draws itself, stop by stop */
+.fresh .stop::before { animation: drive 0.32s ease-out both; animation-delay: calc(var(--i) * 0.32s + 0.12s); }
+.fresh .stop::after, .fresh .stop .k, .fresh .stop .v {
+  animation: arrive 0.28s ease-out both; animation-delay: calc(var(--i) * 0.32s);
+}
+@keyframes drive { from { transform: scaleX(0); } }
+@keyframes arrive { from { opacity: 0; transform: translateY(3px); } }
+@media (prefers-reduced-motion: reduce) { .fresh * , .fresh *::before, .fresh *::after { animation: none !important; } }
+
+/* --- Readout: tokens and cost ----------------------------------------------------------- */
+.readout { display: flex; flex-wrap: wrap; gap: 6px 26px; color: var(--grey); font-size: 0.86rem; }
+.readout b { color: var(--black); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* --- Token breakdown: collapsible panel under the readout ------------------------------- */
+.usage { margin-top: 8px; max-width: 600px; color: var(--grey); font-size: 0.86rem; }
+.usage summary { cursor: pointer; width: fit-content; }
+.usage summary:hover, .usage summary:focus-visible { color: var(--black); }
+.usage .bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 10px 0 8px; background: var(--road); }
+.usage .reasoning { background: var(--accent); }
+.usage .retrieval { background: var(--black); }
+.usage .answer { background: #A8A8A8; }
+.usage ul { list-style: none; padding: 0; margin: 0; }
+.usage li { margin: 2px 0; }
+.usage .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
+.usage b { color: var(--black); font-weight: 600; font-variant-numeric: tabular-nums; margin: 0 8px; }
+
+/* --- Expected answer (golden questions only) -------------------------------------------- */
+.expected {
+  border-left: 3px solid var(--accent); padding: 2px 0 2px 14px; margin-top: 16px;
+  color: var(--grey); font-size: 0.92rem; max-width: 70ch;
+}
+.expected b { color: var(--black); font-weight: 600; }
+
+/* --- Sidebar: golden questions ---------------------------------------------------------- */
+section[data-testid="stSidebar"] .stButton button {
+  justify-content: flex-start; text-align: left; background: #fff;
+  border: 1px solid var(--road); border-left: 3px solid var(--road);
+  transition: border-color 0.15s;
+}
+section[data-testid="stSidebar"] .stButton button:hover,
+section[data-testid="stSidebar"] .stButton button:focus-visible { border-left-color: var(--accent); color: var(--black); }
+section[data-testid="stSidebar"] .stButton button p { text-align: left; }

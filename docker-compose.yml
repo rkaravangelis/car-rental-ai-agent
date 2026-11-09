@@ -1,0 +1,83 @@
+# =========================================================================================
+# Car Rental AI Agent – all services
+#
+#   docker compose up -d                       Start db + run ingestion
+#   docker compose run --rm agent "question"   Ask the agent from the command line
+#   docker compose down                        Stop everything (data is kept)
+#   docker compose down -v                     Stop + delete all data (fresh start)
+#
+#   Ollama is NOT in here: it runs as the native app on your laptop.
+# =========================================================================================
+
+
+# --- Shared settings ---------------------------------------------------------------------
+# A reusable block for every service built from our Dockerfile.
+x-app: &app
+  build: .                                # Build our image from ./Dockerfile
+  env_file: .env                          # POSTGRES_USER / PASSWORD / DB, same file the db uses
+  environment:
+    POSTGRES_HOST: db                     # Containers reach each other by service name ...
+    POSTGRES_PORT: "5432"                 # ... and internal port (5433 exists only on your laptop)
+    OLLAMA_HOST: http://host.docker.internal:11434   # The LLM runs on your laptop, not in Docker
+  extra_hosts:
+    - "host.docker.internal:host-gateway" # Makes "host.docker.internal" mean "my laptop" on every OS
+  depends_on:
+    db:
+      condition: service_healthy          # Start only after the db healthcheck passes
+
+
+services:
+
+  # --- Database: ledger + vector store ---------------------------------------------------
+  db:
+    image: pgvector/pgvector:pg17         # Ready-made image: Postgres 17 with pgvector
+    env_file: .env                        # Creates the user and database on first start
+    ports:
+      - "5433:5432"                       # laptop:container -> DBeaver on localhost:5433
+    volumes:
+      - ./01_database/init.sql:/docker-entrypoint-initdb.d/init.sql   # Schema + seed, first start only
+      - pgdata:/var/lib/postgresql/data                               # The data itself, survives restarts
+    healthcheck:                          
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s                        # Check every 3 seconds ...
+      retries: 20                         # ... and give up after 20 failed checks (~1 minute)
+
+  # --- Ingestion: PDFs -> chunks ---------------------------------------------------------
+  # Runs automatically on "up", fills the vector table, then exits with code 0.
+  ingest:
+    <<: *app                              # Shared settings from above
+    command: python 03_rag/ingest.py      # Script execution
+
+  # --- Agent: command-line questions -----------------------------------------------------
+  # Not started by "up". Run it on demand:
+  agent:
+    <<: *app                              # Shared settings from above
+    profiles: ["cli"]                     # A profile keeps the service out of "up"
+    entrypoint: ["python", "04_agent/agent.py"]   # Fixed start; your text after "agent" = the question
+
+  # --- API: the agent as a web service ---------------------------------------------------
+  # Runs permanently. Test it in the browser: http://localhost:8000/docs
+  api:
+    <<: *app                              # Shared settings from above
+    command: uvicorn api:app --app-dir 05_api --host 0.0.0.0 --port 8000
+    ports:
+      - "127.0.0.1:8000:8000"             # Reachable from your laptop on localhost:8000
+    depends_on:                           # replaces the shared depends_on, so db is listed again
+      db:
+        condition: service_healthy
+      ingest:
+        condition: service_completed_successfully   # the agent needs the chunks at startup
+
+  # --- Frontend: the chat in your browser ------------------------------------------------
+  # Runs permanently. Open http://localhost:8501
+  frontend:
+    <<: *app                              # Shared settings from above
+    working_dir: /app/06_frontend         # Streamlit reads its theme from .streamlit/ here
+    command: streamlit run frontend.py --server.address=0.0.0.0 --server.port=8501 --server.headless=true
+    ports:
+      - "127.0.0.1:8501:8501"             # Reachable from your laptop on localhost:8501
+
+
+# --- Named volumes -----------------------------------------------------------------------
+volumes:
+  pgdata:                                 # Managed by Docker; "down -v" deletes it

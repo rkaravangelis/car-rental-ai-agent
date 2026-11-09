@@ -1,0 +1,7 @@
+# Keep the image small and free of secrets. Secrets come in at runtime via env_file.
+.env
+.venv/
+.git/
+.github/
+**/__pycache__/
+**/.ipynb_checkpoints/

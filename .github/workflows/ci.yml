@@ -1,0 +1,21 @@
+# CI: runs on every push and pull request. A red result can block the merge (branch protection).
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest                     # a fresh Linux machine from GitHub, every time
+    steps:
+      - uses: actions/checkout@v4              # 1. get the code
+      - uses: actions/setup-python@v5          # 2. install Python
+        with:
+          python-version: "3.12"
+      - name: Install test tools               # 3. only what the tests need (no LLM, no torch)
+        run: |
+          python -m pip install -U pip
+          pip install --group dev "pydantic==2.14.3"
+      - name: Lint                             # 4. code style and common bugs
+        run: ruff check .
+      - name: Test                             # 5. the guardrail tests in 04_agent/
+        run: pytest -v

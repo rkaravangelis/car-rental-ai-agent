@@ -1,0 +1,11 @@
+# Theme: same colors as the business requirements visual
+[theme]
+base = "light"
+primaryColor = "#1F4E79"              # accent: buttons, focus, accents
+backgroundColor = "#FAFAFA"           # page background
+secondaryBackgroundColor = "#F1F1F1"  # sidebar and input fields
+textColor = "#191919"                 # near-black text
+
+# Hide the developer toolbar ("Deploy" button) for the demo
+[client]
+toolbarMode = "minimal"
